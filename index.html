@@ -1,37 +1,199 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>我的文集</title>
-  <style>
-  body{
-    font-family: Arial, sans-serif;
-    max-width: 600px;
-    margin: 50px auto;
-    padding: 20px;
-    background: #f7f7f7;
-    font-size: 18px; /* 🔧 全局字体变大 */
-    line-height: 1.6; /* 🔧 行高更舒适 */
-  }
-  .btn{
-    display: block;
-    margin: 15px 0;
-    padding: 14px;
-    background: #24292f;
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 18px; /* 🔧 按钮字体变大 */
-  }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>我的优雅主页</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  width:100vw;
+  height:100vh;
+  /* 加入了背景缩放动画 */
+  background: url('https://picsum.photos/1920/1080?random=12') center/cover no-repeat fixed;
+  animation: bgZoom 40s infinite alternate ease-in-out;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes bgZoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+.menu-box{
+  position:fixed;
+  top:22px;
+  left:22px;
+  z-index:999;
+}
+.menu-btn{
+  width:52px;
+  height:52px;
+  background:rgba(255,255,255,0.15);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.25);
+  border-radius:14px;
+  color:#fff;
+  font-size:26px;
+  display:grid;
+  place-content:center;
+  cursor:pointer;
+  transition: transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.menu-btn:active{ transform: scale(0.93); }
+
+.menu-list{
+  margin-top:10px;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:16px;
+  padding:16px;
+  min-width:190px;
+  opacity:0;
+  transform: translateX(-40px) scale(0.92);
+  pointer-events:none;
+  transition: all 0.5s cubic-bezier(0.25, 1, 0.25, 1);
+}
+.menu-list.show{
+  opacity:1;
+  transform: translateX(0) scale(1);
+  pointer-events:auto;
+}
+
+.menu-list a{
+  display:block;
+  color:#fff;
+  text-decoration:none;
+  padding:13px;
+  margin:6px 0;
+  background:rgba(255,255,255,.08);
+  border-radius:10px;
+  text-align:center;
+  transition: background 0.25s ease;
+}
+.menu-list a:hover{ background:rgba(255,255,255,.2); }
+
+/* 优化后的中央面板 */
+.center-box{
+  text-align:center;
+  background:rgba(255,255,255,.07);
+  backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:28px;
+  padding:40px 30px;
+  width: 90%;
+  max-width: 450px; /* 适配移动端 */
+  animation: panelFade 1.2s cubic-bezier(0.25, 1, 0.25, 1) forwards;
+}
+
+@keyframes panelFade{
+  from{opacity:0; transform:translateY(30px) scale(0.95);}
+  to{opacity:1; transform:translateY(0) scale(1);}
+}
+
+.time{
+  font-size: clamp(40px, 10vw, 64px);
+  font-weight: 300;
+  margin-bottom: 5px;
+  font-variant-numeric: tabular-nums; /* 关键：修复时间跳动 */
+}
+.date{
+  font-size: 16px;
+  opacity: .8;
+  margin-bottom: 25px;
+}
+.hitokoto-box {
+  margin-bottom: 30px;
+  padding: 0 10px;
+}
+.hitokoto-text {
+  font-size: 18px;
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  display: block;
+}
+.hitokoto-from {
+  font-size: 13px;
+  opacity: 0.6;
+}
+.weather{
+  font-size:15px;
+  background:rgba(0,0,0,.2);
+  padding:8px 18px;
+  border-radius:20px;
+  display:inline-block;
+  border: 1px solid rgba(255,255,255,0.1);
+}
 </style>
 </head>
 <body>
-  <h1>我的文字合集</h1>
 
-  <a class="btn" href="wenzhang1.md">第一篇文章</a>
-  <a class="btn" href="suibi.md">随笔日记</a>
-  <a class="btn" href="xiaoshuo.md">小说片段</a>
+<div class="menu-box">
+  <div class="menu-btn" onclick="toggleMenu()">☰</div>
+  <div class="menu-list" id="menu">
+    <a href="#">第一篇文章</a>
+    <a href="#">随笔日记</a>
+    <a href="#">小说片段</a>
+  </div>
+</div>
 
+<div class="center-box">
+  <div class="time" id="time">00:00:00</div>
+  <div class="date" id="date">正在读取日期...</div>
+  
+  <div class="hitokoto-box">
+    <span class="hitokoto-text" id="hitokoto_text">正在获取名句...</span>
+    <span class="hitokoto-from" id="hitokoto_from"></span>
+  </div>
+
+  <div class="weather" id="weather">获取天气中...</div>
+</div>
+
+<script>
+function toggleMenu(){
+  document.getElementById('menu').classList.toggle('show');
+}
+
+// 时间更新
+function updateTime(){
+  let d = new Date();
+  document.getElementById('time').innerText = d.toLocaleTimeString('zh-CN',{hour12:false});
+  let w = '日一二三四五六'[d.getDay()];
+  document.getElementById('date').innerText = 
+    `${d.getFullYear()}年${(d.getMonth()+1+'').padStart(2,0)}月${(d.getDate()+'').padStart(2,0)}日 星期${w}`;
+}
+setInterval(updateTime,1000);
+updateTime();
+
+// 获取一言名句
+fetch('https://v1.hitokoto.cn')
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById('hitokoto_text').innerText = data.hitokoto;
+    document.getElementById('hitokoto_from').innerText = `—— 「${data.from}」`;
+  })
+  .catch(() => {
+    document.getElementById('hitokoto_text').innerText = "生活，就是活着。";
+  });
+
+// 获取天气（增加了错误捕获）
+fetch('https://api.weatherapi.com/v1/current.json?key=e83f0266f46a4777bf4101312251903&q=Changchun&lang=zh')
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('weather').innerText = 
+      `${data.location.name} · ${data.current.condition.text} · ${data.current.temp_c}℃`;
+  })
+  .catch(() => {
+    document.getElementById('weather').innerText = "天气接口连接失败";
+  });
+</script>
 </body>
 </html>
