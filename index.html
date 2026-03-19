@@ -9,7 +9,6 @@
 body{
   width:100vw;
   height:100vh;
-  /* 加入了背景缩放动画 */
   background: url('https://picsum.photos/1920/1080?random=12') center/cover no-repeat fixed;
   animation: bgZoom 40s infinite alternate ease-in-out;
   font-family: system-ui, -apple-system, sans-serif;
@@ -79,7 +78,6 @@ body{
 }
 .menu-list a:hover{ background:rgba(255,255,255,.2); }
 
-/* 优化后的中央面板 */
 .center-box{
   text-align:center;
   background:rgba(255,255,255,.07);
@@ -88,7 +86,7 @@ body{
   border-radius:28px;
   padding:40px 30px;
   width: 90%;
-  max-width: 450px; /* 适配移动端 */
+  max-width: 450px;
   animation: panelFade 1.2s cubic-bezier(0.25, 1, 0.25, 1) forwards;
 }
 
@@ -101,7 +99,7 @@ body{
   font-size: clamp(40px, 10vw, 64px);
   font-weight: 300;
   margin-bottom: 5px;
-  font-variant-numeric: tabular-nums; /* 关键：修复时间跳动 */
+  font-variant-numeric: tabular-nums;
 }
 .date{
   font-size: 16px;
@@ -132,6 +130,63 @@ body{
   display:inline-block;
   border: 1px solid rgba(255,255,255,0.1);
 }
+
+/* 编辑弹窗样式 */
+.editor-layer{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.6);
+  backdrop-filter:blur(12px);
+  z-index:1000;
+  display:none;
+  place-items:center;
+  padding:20px;
+}
+.editor-box{
+  width:100%;max-width:700px;height:80vh;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.editor-head{
+  padding:16px;background:rgba(255,255,255,.05);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.editor-body{
+  flex:1;background:#111;color:#fff;
+  padding:20px;font-size:16px;line-height:1.6;
+  border:none;outline:none;
+}
+.editor-foot{
+  padding:12px;background:rgba(255,255,255,.05);
+  display:flex;justify-content:flex-end;gap:10px;
+}
+.editor-foot button{
+  padding:8px 16px;border-radius:10px;border:none;cursor:pointer;}
+
+.pwd-layer{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.7);
+  z-index:1001;
+  display:none;
+  place-items:center;
+}
+.pwd-box{
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.15);
+  padding:30px;border-radius:20px;
+  text-align:center;width:90%;max-width:360px;
+}
+.pwd-box input{
+  width:100%;padding:12px 16px;
+  background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;color:#fff;margin:16px 0;outline:none;
+}
+.pwd-box button{
+  padding:10px 24px;border-radius:12px;border:none;background:#fff;color:#000;cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -139,7 +194,7 @@ body{
 <div class="menu-box">
   <div class="menu-btn" onclick="toggleMenu()">☰</div>
   <div class="menu-list" id="menu">
-    <a href="#">第一篇文章</a>
+    <a href="javascript:openArticle()">第一篇文章</a>
     <a href="#">随笔日记</a>
     <a href="#">小说片段</a>
   </div>
@@ -151,10 +206,29 @@ body{
   
   <div class="hitokoto-box">
     <span class="hitokoto-text" id="hitokoto_text">正在获取名句...</span>
-    <span class="hitokoto-from" id="hitokoto_from"></span>
+    <span class="hitokoto_from" id="hitokoto_from"></span>
   </div>
 
   <div class="weather" id="weather">获取天气中...</div>
+</div>
+
+<!-- 文章编辑 -->
+<div class="pwd-layer" id="pwdLayer">
+  <div class="pwd-box">
+    <h3>输入编辑密码</h3>
+    <input type="password" id="pwd" placeholder="请输入密码">
+    <button onclick="checkPwd()">确认</button>
+  </div>
+</div>
+
+<div class="editor-layer" id="editorLayer">
+  <div class="editor-box">
+    <div class="editor-head"><span>编辑第一篇文章</span><button onclick="closeEditor()">关闭</button></div>
+    <textarea class="editor-body" id="articleContent"></textarea>
+    <div class="editor-foot">
+      <button onclick="saveArticle()">保存内容</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -162,7 +236,6 @@ function toggleMenu(){
   document.getElementById('menu').classList.toggle('show');
 }
 
-// 时间更新
 function updateTime(){
   let d = new Date();
   document.getElementById('time').innerText = d.toLocaleTimeString('zh-CN',{hour12:false});
@@ -173,27 +246,42 @@ function updateTime(){
 setInterval(updateTime,1000);
 updateTime();
 
-// 获取一言名句
 fetch('https://v1.hitokoto.cn')
-  .then(response => response.json())
-  .then(data => {
-    document.getElementById('hitokoto_text').innerText = data.hitokoto;
-    document.getElementById('hitokoto_from').innerText = `—— 「${data.from}」`;
+  .then(r=>r.json())
+  .then(d=>{
+    document.getElementById('hitokoto_text').innerText=d.hitokoto;
+    document.getElementById('hitokoto_from').innerText=`——「${d.from}」`;
   })
-  .catch(() => {
-    document.getElementById('hitokoto_text').innerText = "生活，就是活着。";
-  });
 
-// 获取天气（增加了错误捕获）
 fetch('https://api.weatherapi.com/v1/current.json?key=e83f0266f46a4777bf4101312251903&q=Changchun&lang=zh')
-  .then(res => res.json())
-  .then(data => {
-    document.getElementById('weather').innerText = 
-      `${data.location.name} · ${data.current.condition.text} · ${data.current.temp_c}℃`;
+  .then(r=>r.json())
+  .then(d=>{
+    document.getElementById('weather').innerText=`${d.location.name}·${d.current.condition.text}·${d.current.temp_c}℃`;
   })
-  .catch(() => {
-    document.getElementById('weather').innerText = "天气接口连接失败";
-  });
+
+// 文章编辑逻辑
+const PASSWORD = "123456";
+const articleText = "这里是你的第一篇文章内容，可以在这里实时编辑。";
+
+function openArticle(){
+  document.getElementById('pwdLayer').style.display='grid';
+  document.getElementById('pwd').value='';
+}
+function checkPwd(){
+  const v=document.getElementById('pwd').value.trim();
+  if(v===PASSWORD){
+    document.getElementById('pwdLayer').style.display='none';
+    document.getElementById('articleContent').value=articleText;
+    document.getElementById('editorLayer').style.display='grid';
+  }else alert("密码错误");
+}
+function closeEditor(){
+  document.getElementById('editorLayer').style.display='none';
+}
+function saveArticle(){
+  alert("已保存文章内容！");
+  closeEditor();
+}
 </script>
 </body>
 </html>
